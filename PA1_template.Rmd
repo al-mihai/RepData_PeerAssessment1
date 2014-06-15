@@ -2,19 +2,82 @@
 
 
 ## Loading and preprocessing the data
+```{r readingData}
+dt<-read.table("activity.csv", dec=".", fill=TRUE, quote="\"", 
+                 row.names=NULL,
+                 header=TRUE, sep=",")
 
-
+dt$date<-as.Date(dt$date, "%Y-%m-%d")
+```
 
 ## What is mean total number of steps taken per day?
+```{r meanStepsByDay1}
+stepsByDay<-aggregate(dt$steps, by=list(day = dt$date),FUN=sum, na.rm=TRUE)
+meanStepsByDay<-aggregate(dt$steps, by=list(day = dt$date),FUN=mean, na.rm=TRUE)
+plot(stepsByDay$day, stepsByDay$x, type="h", xlab = "", ylab="number of steps", main = "The number of steps taken each day")
+dev.copy(png, file = "figures/histogramStepsEachDay.png", width = 640, height = 480, bg="white")
+```
+The mean is:
+```{r meanStepsByDay2}
+mean(stepsByDay$x)
+```
 
+The median is:
+```{r medianStepsByDay}
+median(stepsByDay$x)
+```
 
 
 ## What is the average daily activity pattern?
-
-
+```{r dailyActivityPattern}
+meanStepsByInterval<-aggregate(dt$steps, by=list(interval = dt$interval),FUN=mean, na.rm=TRUE)
+plot(meanStepsByInterval$interval, meanStepsByInterval$x, type="l", xlab = "interval", ylab="average number of steps", main = "The average number of steps by interval")
+dev.copy(png, file = "figures/averageNumberOfStepsByInterval.png", width = 640, height = 480, bg="white")
+```
+The 5-minute interval, on average across all the days in the dataset, which contains the maximum number of steps is:
+```{r maxMeanStepsByInterval}
+subset(meanStepsByInterval$interval, meanStepsByInterval$x==max(meanStepsByInterval$x))
+```
 
 ## Imputing missing values
+The total number of missing values in the dataset: 
+```{r missingValues}
+sum(is.na(dt$steps))
+```
 
+### The strategy chosen to fill the missing values is to use the mean for that 5-minute interval, converted to integer. 
+```{r fillMissingData}
+x=dt
+for(i in 1:nrow(x)){
+    if (is.na(x[i,1])){
+        interval = x[i,3]    
+        x[i,1] <- as.integer(subset(meanStepsByInterval, meanStepsByInterval$interval==interval)[1,2])
+    }
+}
+sum(is.na(x$steps))
+
+stepsXByDay<-aggregate(x$steps, by=list(day = x$date),FUN=sum, na.rm=TRUE)
+meanXStepsByDay<-aggregate(x$steps, by=list(day = x$date),FUN=mean, na.rm=TRUE)
+plot(stepsXByDay$day, stepsXByDay$x, type="h", xlab = "", ylab="number of steps", main = "The number of steps taken each day after filling the missing values")
+dev.copy(png, file = "figures/histogramXStepsEachDay.png", width = 640, height = 480, bg="white")
+```
+
+The mean after filling the missing values is:
+```{r meanXStepsByDay}
+mean(stepsXByDay$x)
+```
+
+The median after filling the missing values is:
+```{r medianXStepsByDay}
+median(stepsXByDay$x)
+```
+
+When comparing the case with the missing values with the one where we filled them with the integer mean for the 5-minute interval, we can see that the median is the same and the mean differs.
+The impact of imputing missing data on the estimates of the total daily number of steps can be seen if we do the difference between the daily number of steps after filling the data and the original number of steps:
+```{r differenceStepsByDay}
+stepsXByDay$x -stepsByDay$x
+```
+As expected, we see non null values for the days where missing data was filled in.
 
 
 ## Are there differences in activity patterns between weekdays and weekends?
