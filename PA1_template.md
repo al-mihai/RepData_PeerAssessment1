@@ -179,3 +179,16 @@ As expected, we see non null values for the days where missing data was filled i
 
 
 ## Are there differences in activity patterns between weekdays and weekends?
+
+```r
+library(lattice)
+dt$date <- factor(as.numeric(weekdays(dt$date) %in% c("Sunday", "Saturday")), 
+    labels = c("weekday", "weekend"))
+meanStepsByInt <- aggregate(dt$steps, by = list(interval = dt$interval, day = dt$date), 
+    FUN = mean, na.rm = TRUE)
+xyplot(meanStepsByInt$x ~ meanStepsByInt$interval | meanStepsByInt$day, type = "l", 
+    layout = c(1, 2), xlab = "Interval", ylab = "Number of steps")
+```
+
+![plot of chunk weekdayDifferences](figure/weekdayDifferences.png) 
+
